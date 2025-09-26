@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestra Historia de Amor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos personalizados y animaciones */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e0033, #3d004c, #5c0066);
+            overflow: hidden; /* Evita el scroll, toda la acción es en la pantalla */
+            color: #f0e6ff;
+            touch-action: none; /* Previene el scroll en dispositivos táctiles */
+        }
+
+        .font-dancing {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Contenedor para los elementos que caen */
+        #fall-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; 
+        }
+
+        /* Estilo para los corazones */
+        .heart {
+            position: absolute;
+            top: -5vh;
+            font-size: 2rem;
+            color: #ff8fab;
+            animation: fall linear forwards;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Estilo para los tulipanes */
+        .tulip {
+            position: absolute;
+            top: -5vh;
+            font-size: 2rem;
+            color: #C8A2C8; /* Color lila */
+            animation: fall linear forwards;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Estilo para las tarjetas de fotos */
+        .memory-card {
+            position: absolute;
+            top: -400px; /* Inicia fuera de la pantalla */
+            width: 280px;
+            max-width: 70vw;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 1rem;
+            animation: fall-tumble linear forwards;
+            pointer-events: auto;
+            cursor: grab; /* Indica que se puede arrastrar */
+            user-select: none; /* Evita la selección de texto al arrastrar */
+            z-index: 10;
+        }
+        
+        .memory-card.dragging {
+            cursor: grabbing;
+            z-index: 20;
+            animation: none; /* Detiene la animación al arrastrar */
+        }
+
+        /* Animación de caída para corazones y fotos */
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(360deg);
+                opacity: 0.8;
+            }
+        }
+        
+        @keyframes fall-tumble {
+            0% {
+                transform: translateY(0) rotate(-20deg);
+                opacity: 1;
+            }
+            85% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(20deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Estilos para el Modal */
+        #addMemoryModal {
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+             background: linear-gradient(135deg, #3d004c, #5c0066);
+        }
+
+        /* --- Estilos para Móviles --- */
+        @media (max-width: 640px) {
+            header h1 {
+                font-size: 2.5rem; /* ~text-4xl */
+                line-height: 2.75rem;
+            }
+            header p {
+                font-size: 1rem; /* ~text-base */
+            }
+            .memory-card {
+                width: 220px; /* Ancho más reducido para móviles */
+            }
+            #openModalBtn, #musicToggleBtn {
+                 bottom: 1rem;
+                 right: 1rem;
+            }
+             #musicToggleBtn {
+                 left: 1rem;
+             }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Contenedor principal para el contenido y las animaciones -->
+    <div id="app-container" class="relative w-full h-screen">
+        
+        <div id="fall-container"></div>
+        
+        <header class="absolute top-0 left-0 right-0 pt-8 text-center z-10">
+            <h1 class="font-dancing text-5xl md:text-7xl text-white shadow-lg">Dono & Nay</h1>
+            <p class="text-purple-200 mt-2 text-lg">Un recuerdo a la vez...</p>
+        </header>
+
+        <button id="openModalBtn" class="fixed bottom-8 right-8 bg-pink-500 hover:bg-pink-600 text-white rounded-full p-4 shadow-xl transition-transform transform hover:scale-110 z-30">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+        </button>
+
+        <button id="musicToggleBtn" class="fixed bottom-8 left-8 bg-purple-500 hover:bg-purple-600 text-white rounded-full p-4 shadow-xl transition-transform transform hover:scale-110 z-30">
+            <svg id="music-on-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+            <svg id="music-off-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Modal para agregar un nuevo recuerdo -->
+    <div id="addMemoryModal" class="fixed inset-0 w-full h-full flex items-center justify-center z-40 hidden">
+        <div class="modal-content w-11/12 max-w-lg p-8 rounded-2xl shadow-2xl border border-purple-400">
+            <h2 class="font-dancing text-4xl text-white mb-6 text-center">Añadir un Recuerdo</h2>
+            <form id="memoryForm">
+                <div class="mb-4">
+                    <label for="imageUrl" class="block text-purple-200 mb-2">URL de la Imagen</label>
+                    <input type="url" id="imageUrl" class="w-full bg-gray-800 bg-opacity-50 border border-purple-500 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="https://ejemplo.com/foto.jpg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="phrase" class="block text-purple-200 mb-2">Frase Corta</label>
+                    <input type="text" id="phrase" class="w-full bg-gray-800 bg-opacity-50 border border-purple-500 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Nuestra primera foto" required>
+                </div>
+                <div class="mb-6">
+                    <label for="story" class="block text-purple-200 mb-2">Nuestra Historia</label>
+                    <textarea id="story" rows="4" class="w-full bg-gray-800 bg-opacity-50 border border-purple-500 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Ese día fue mágico por..."></textarea>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button type="button" id="closeModalBtn" class="py-2 px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition">Cerrar</button>
+                    <button type="submit" class="py-2 px-6 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-bold transition">Crear Recuerdo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para ver la foto en grande -->
+    <div id="photoViewerModal" class="fixed inset-0 w-full h-full flex items-center justify-center z-50 hidden bg-black bg-opacity-80 backdrop-filter backdrop-blur-sm">
+        <div class="relative p-2 bg-black bg-opacity-20 rounded-xl">
+            <img id="fullSizeImage" src="" alt="Recuerdo en grande" class="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl">
+            <button id="closePhotoViewerBtn" class="absolute top-0 right-0 m-1 bg-white text-black rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold leading-none">&times;</button>
+        </div>
+    </div>
+
+    <audio id="background-music" src="music/Coldplay - Yellow.flac" loop></audio>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fallContainer = document.getElementById('fall-container');
+            const openModalBtn = document.getElementById('openModalBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const addMemoryModal = document.getElementById('addMemoryModal');
+            const memoryForm = document.getElementById('memoryForm');
+            const photoViewerModal = document.getElementById('photoViewerModal');
+            const fullSizeImage = document.getElementById('fullSizeImage');
+            const closePhotoViewerBtn = document.getElementById('closePhotoViewerBtn');
+            const backgroundMusic = document.getElementById('background-music');
+            const musicToggleBtn = document.getElementById('musicToggleBtn');
+            const musicOnIcon = document.getElementById('music-on-icon');
+            const musicOffIcon = document.getElementById('music-off-icon');
+
+            let cardWidthWithMargin;
+            let availableLaneIndices = [];
+
+            function setupLanes() {
+                const isMobile = window.innerWidth <= 640;
+                const cardWidth = isMobile ? 220 : 280; // Ancho reducido para móviles
+                cardWidthWithMargin = cardWidth + 20;
+
+                const laneCount = Math.floor(window.innerWidth / cardWidthWithMargin);
+                if (availableLaneIndices.length !== laneCount) {
+                    availableLaneIndices = Array.from(Array(laneCount).keys());
+                }
+            }
+
+            window.addEventListener('resize', setupLanes);
+            setupLanes();
+            
+            const initialMemories = [
+                { imageUrl: 'img/xochi.png', phrase: 'Salida en bicicleta y primer beso en foto', story: 'Muy bonito día y felicidad' },
+                { imageUrl: 'img/gym.png', phrase: 'Entrenando juntos', story: 'Cuando me entrenaste duro para la pierna jaja' },
+                { imageUrl: 'img/izta.png', phrase: 'Nuestra primera foto juntos', story: 'Primer viaje trepacerros' },
+                { imageUrl: 'img/bufa.png', phrase: 'Primera ruta juntos', story: 'Pesado pero se logró' },
+                { imageUrl: 'img/bufa2.png', phrase: 'Que hermoso nos vemos' },
+                { imageUrl: 'img/bufa3.png', phrase: 'Somos el uno para el otro' },
+                { imageUrl: 'img/DJ.png', phrase: 'Admiro tu talento', story: 'Eres una gran DJ y me encanta verte en acción' },
+                { imageUrl: 'img/DJ2.png', phrase: 'TE QUIERO MUCHO NAII', story: 'Eres una gran DJ y me encanta verte en acción' },
+                { imageUrl: 'img/espejo.png', phrase: 'TU & YO FOREVER' },
+                { imageUrl: 'img/espejo2.png', phrase: 'DONO & NAY FOREVER' },
+                { imageUrl: 'img/espejo3.png', phrase: 'RYSONBL3ND & NAII FOREVER' }
+            ];
+
+            let allMemories = [...initialMemories];
+            let nextMemoryIndex = 0;
+
+            backgroundMusic.volume = 0.3;
+            const playMusic = async () => {
+                try {
+                    await backgroundMusic.play();
+                    musicOnIcon.classList.remove('hidden');
+                    musicOffIcon.classList.add('hidden');
+                } catch (err) {
+                    console.log("La reproducción automática fue bloqueada por el navegador.");
+                }
+            };
+            musicToggleBtn.addEventListener('click', () => {
+                if (backgroundMusic.paused) {
+                    backgroundMusic.play();
+                    musicOnIcon.classList.remove('hidden');
+                    musicOffIcon.classList.add('hidden');
+                } else {
+                    backgroundMusic.pause();
+                    musicOnIcon.classList.add('hidden');
+                    musicOffIcon.classList.remove('hidden');
+                }
+            });
+            document.body.addEventListener('click', playMusic, { once: true });
+
+            openModalBtn.addEventListener('click', () => addMemoryModal.classList.remove('hidden'));
+            closeModalBtn.addEventListener('click', () => addMemoryModal.classList.add('hidden'));
+            addMemoryModal.addEventListener('click', (e) => {
+                if (e.target === addMemoryModal) {
+                    addMemoryModal.classList.add('hidden');
+                }
+            });
+
+            let activeCard = null;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            function onDragStart(e) {
+                if (e.target.closest('.memory-card')) {
+                    activeCard = e.target.closest('.memory-card');
+                    activeCard.classList.add('dragging');
+                    const rect = activeCard.getBoundingClientRect();
+                    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                    offsetX = clientX - rect.left;
+                    offsetY = clientY - rect.top;
+                    document.addEventListener('mousemove', onDragMove);
+                    document.addEventListener('touchmove', onDragMove, { passive: false });
+                    document.addEventListener('mouseup', onDragEnd);
+                    document.addEventListener('touchend', onDragEnd);
+                }
+            }
+
+            function onDragMove(e) {
+                if (!activeCard) return;
+                e.preventDefault();
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                let newX = clientX - offsetX;
+                let newY = clientY - offsetY;
+                activeCard.style.left = `${newX}px`;
+                activeCard.style.top = `${newY}px`;
+                activeCard.style.transform = `rotate(0deg)`;
+            }
+
+            function onDragEnd() {
+                if (!activeCard) return;
+                activeCard.classList.remove('dragging');
+                activeCard = null;
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('touchmove', onDragMove);
+                document.removeEventListener('mouseup', onDragEnd);
+                document.removeEventListener('touchend', onDragEnd);
+            }
+
+            fallContainer.addEventListener('mousedown', onDragStart);
+            fallContainer.addEventListener('touchstart', onDragStart, { passive: true });
+            
+            fallContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.memory-card');
+                if (card && !card.classList.contains('dragging')) {
+                    setTimeout(() => { 
+                         if (!activeCard) {
+                            const imgSrc = card.querySelector('img').src;
+                            fullSizeImage.src = imgSrc;
+                            photoViewerModal.classList.remove('hidden');
+                         }
+                    }, 50);
+                }
+            });
+
+            const closePhotoViewer = () => {
+                photoViewerModal.classList.add('hidden');
+            };
+            closePhotoViewerBtn.addEventListener('click', closePhotoViewer);
+            photoViewerModal.addEventListener('click', (e) => {
+                if (e.target === photoViewerModal) closePhotoViewer();
+            });
+            
+            function spawnNextMemory() {
+                if (allMemories.length === 0) return;
+                const memoryToSpawn = allMemories[nextMemoryIndex];
+                createFallingMemory(memoryToSpawn);
+                nextMemoryIndex = (nextMemoryIndex + 1) % allMemories.length; // Avanza y cicla
+            }
+
+            function createFallingMemory(memoryData) {
+                if (availableLaneIndices.length === 0) {
+                    setTimeout(() => createFallingMemory(memoryData), 2000);
+                    return;
+                }
+                const laneArrayIndex = Math.floor(Math.random() * availableLaneIndices.length);
+                const laneIndex = availableLaneIndices.splice(laneArrayIndex, 1)[0];
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.innerHTML = `
+                    <img src="${memoryData.imageUrl}" alt="${memoryData.phrase}" class="w-full h-48 object-cover rounded-lg mb-4 pointer-events-none" onerror="this.onerror=null;this.src='https://placehold.co/400x400/333/FFF?text=Error+en+imagen';">
+                    <h3 class="font-bold text-xl text-white pointer-events-none">${memoryData.phrase}</h3>
+                    <p class="text-purple-200 mt-2 text-sm pointer-events-none">${memoryData.story || ''}</p>
+                `;
+                const randomX = (laneIndex * cardWidthWithMargin) + (Math.random() * 10);
+                const randomDuration = Math.random() * 5 + 10; 
+                card.style.left = `${randomX}px`;
+                card.style.animationDuration = `${randomDuration}s`;
+                fallContainer.appendChild(card);
+                
+                setTimeout(() => {
+                    card.remove();
+                    availableLaneIndices.push(laneIndex); 
+                    availableLaneIndices.sort((a,b) => a-b);
+                    spawnNextMemory(); // Llama a la siguiente foto en la secuencia
+                }, randomDuration * 1000);
+            }
+            
+            function createFallingHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = '❤';
+                const randomX = Math.random() * 100;
+                const randomDuration = Math.random() * 5 + 5;
+                const randomDelay = Math.random() * 5;
+                const randomScale = Math.random() * 0.8 + 0.5;
+                heart.style.left = `${randomX}vw`;
+                heart.style.animationDuration = `${randomDuration}s`;
+                heart.style.animationDelay = `${randomDelay}s`;
+                heart.style.transform = `scale(${randomScale})`;
+                fallContainer.appendChild(heart);
+                setTimeout(() => heart.remove(), (randomDuration + randomDelay) * 1000);
+            }
+            
+            function createFallingTulip() {
+                const tulip = document.createElement('div');
+                tulip.className = 'tulip';
+                tulip.innerHTML = '🌷';
+                const randomX = Math.random() * 100;
+                const randomDuration = Math.random() * 7 + 7; 
+                const randomDelay = Math.random() * 6;
+                const randomScale = Math.random() * 0.7 + 0.6;
+                tulip.style.left = `${randomX}vw`;
+                tulip.style.animationDuration = `${randomDuration}s`;
+                tulip.style.animationDelay = `${randomDelay}s`;
+                tulip.style.transform = `scale(${randomScale})`;
+                fallContainer.appendChild(tulip);
+                setTimeout(() => tulip.remove(), (randomDuration + randomDelay) * 1000);
+            }
+
+            memoryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newMemory = {
+                    imageUrl: document.getElementById('imageUrl').value,
+                    phrase: document.getElementById('phrase').value,
+                    story: document.getElementById('story').value
+                };
+                allMemories.push(newMemory);
+                spawnNextMemory();
+                memoryForm.reset();
+                addMemoryModal.classList.add('hidden');
+            });
+            
+            // Lanza las primeras 4 tarjetas para empezar
+            for (let i = 0; i < 4; i++) {
+                if (i < allMemories.length) {
+                    setTimeout(() => {
+                        spawnNextMemory();
+                    }, i * 2000);
+                }
+            }
+
+            setInterval(createFallingHeart, 500);
+            setInterval(createFallingTulip, 900);
+
+            playMusic();
+        });
+    </script>
+</body>
+</html>
+
